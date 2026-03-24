@@ -1,0 +1,197 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System user with advanced RBAC",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["patient", "doctor", "pharmacist", "lab_technician", "facility_admin", "ministry_admin", "admin", "regional_admin"] },
+        "permissions": { "type": "array", "items": { "type": "string" } },
+        "facilityId": { "type": "string" },
+        "yhid": { "type": "string", "description": "Yemeni Health ID" },
+        "name": { "type": "string" },
+        "region": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Visit": {
+      "title": "Visit",
+      "description": "Medical visit record",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "facilityId": { "type": "string" },
+        "doctorId": { "type": "string" },
+        "type": { "type": "string", "enum": ["emergency", "checkup", "followup", "lab", "radiology"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["scheduled", "completed", "cancelled"] }
+      },
+      "required": ["patientId", "facilityId", "timestamp", "type"]
+    },
+    "Prescription": {
+      "title": "Prescription",
+      "description": "Medical prescription",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "doctorId": { "type": "string" },
+        "facilityId": { "type": "string" },
+        "medications": { "type": "array", "items": { "type": "object" } },
+        "status": { "type": "string", "enum": ["pending", "dispensed", "expired"] },
+        "issuedAt": { "type": "string", "format": "date-time" },
+        "qrHash": { "type": "string" }
+      },
+      "required": ["patientId", "doctorId", "medications", "issuedAt"]
+    },
+    "Activity": {
+      "title": "Activity",
+      "description": "Real-time system activity",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["new_patient", "new_prescription", "lab_result", "emergency"] },
+        "description": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" },
+        "facilityId": { "type": "string" }
+      },
+      "required": ["type", "description", "timestamp"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System alerts and notifications",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["epidemic", "system", "emergency"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "target": { "type": "string", "description": "Target audience (e.g., 'all', 'doctors', 'admins')" }
+      },
+      "required": ["title", "message", "type", "timestamp"]
+    },
+    "Citizen": {
+      "title": "Citizen",
+      "description": "National Digital Identity for Yemeni citizens",
+      "type": "object",
+      "properties": {
+        "nationalId": { "type": "string", "description": "Unique 11-digit national identity number" },
+        "fullName": { "type": "string", "description": "Full legal name" },
+        "dateOfBirth": { "type": "string", "format": "date", "description": "Date of birth" },
+        "gender": { "type": "string", "enum": ["ذكر", "أنثى"], "description": "Gender" },
+        "biometricHash": { "type": "string", "description": "Encrypted hash of biometric data" },
+        "phone": { "type": "string", "description": "Primary contact number" },
+        "healthId": { "type": "string", "description": "Unique health identifier" }
+      },
+      "required": ["nationalId", "fullName", "dateOfBirth", "gender", "phone"]
+    },
+    "HealthRecord": {
+      "title": "Health Record",
+      "description": "Unified medical record for a patient",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string", "description": "Reference to Citizen healthId" },
+        "nationalId": { "type": "string", "description": "Reference to Citizen nationalId" },
+        "records": { "type": "array", "items": { "type": "object" }, "description": "Medical history entries" },
+        "prescriptions": { "type": "array", "items": { "type": "object" }, "description": "Active and past prescriptions" },
+        "visits": { "type": "array", "items": { "type": "object" }, "description": "Hospital/Clinic visit logs" },
+        "lastSync": { "type": "string", "format": "date-time", "description": "Timestamp of last regional sync" },
+        "region": { "type": "string", "description": "Originating regional node" }
+      },
+      "required": ["patientId", "nationalId"]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "Security and access logs",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "action": { "type": "string" },
+        "resource": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "region": { "type": "string" }
+      }
+    },
+    "Facility": {
+      "title": "Facility",
+      "description": "Healthcare facility (hospital, clinic, pharmacy, lab)",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["hospital", "pharmacy", "lab", "radiology", "clinic"] },
+        "location": { "type": "object", "description": "GeoPoint location" },
+        "phone": { "type": "string" },
+        "rating": { "type": "number" }
+      },
+      "required": ["name", "type", "location"]
+    },
+    "AIReport": {
+      "title": "AI Report",
+      "description": "AI-generated medical analysis report",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "symptoms": { "type": "string" },
+        "selectedSymptoms": { "type": "array", "items": { "type": "string" } },
+        "result": { "type": "object" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "symptoms", "result", "timestamp"]
+    },
+    "EpidemiologyReport": {
+      "title": "Epidemiology Report",
+      "description": "National disease tracking report",
+      "type": "object",
+      "properties": {
+        "disease": { "type": "string" },
+        "region": { "type": "string" },
+        "cases": { "type": "integer" },
+        "riskLevel": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["disease", "region", "cases", "riskLevel", "timestamp"]
+    },
+    "RegionalNode": {
+      "title": "Regional Node",
+      "description": "Status of regional data nodes",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "status": { "type": "string" },
+        "load": { "type": "integer" },
+        "lastSync": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "status", "load"]
+    },
+    "Session": {
+      "title": "Session",
+      "description": "User authentication session",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "refreshToken": { "type": "string" },
+        "device": { "type": "string" },
+        "ip": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "refreshToken", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": { "schema": "User", "description": "System users" },
+    "/citizens/{citizenId}": { "schema": "Citizen", "description": "National Identity Registry" },
+    "/health_records/{recordId}": { "schema": "HealthRecord", "description": "Unified Health Records" },
+    "/audit_logs/{logId}": { "schema": "AuditLog", "description": "System Audit Logs" },
+    "/facilities/{facilityId}": { "schema": "Facility", "description": "Healthcare Facilities" },
+    "/ai_reports/{reportId}": { "schema": "AIReport", "description": "AI Medical Reports" },
+    "/epidemiology/{reportId}": { "schema": "EpidemiologyReport", "description": "National Disease Tracking" },
+    "/regional_nodes/{nodeId}": { "schema": "RegionalNode", "description": "Network Node Status" },
+    "/visits/{visitId}": { "schema": "Visit", "description": "Medical Visits" },
+    "/prescriptions/{prescriptionId}": { "schema": "Prescription", "description": "Medical Prescriptions" },
+    "/activities/{activityId}": { "schema": "Activity", "description": "System Activities" },
+    "/notifications/{notificationId}": { "schema": "Notification", "description": "System Notifications" },
+    "/sessions/{sessionId}": { "schema": "Session", "description": "User Sessions" }
+  }
+}

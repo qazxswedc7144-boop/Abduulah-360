@@ -1,0 +1,9 @@
+{
+  "name": "النظام الصحي الوطني الرقمي | NDHS",
+  "description": "المنصة الوطنية الموحدة للسجلات الطبية والخدمات الصحية في الجمهورية اليمنية - National Digital Health System (NDHS)",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera",
+    "microphone"
+  ]
+}

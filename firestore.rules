@@ -1,0 +1,134 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && getUserData().role == role;
+    }
+    
+    function hasPermission(permission) {
+      return isAuthenticated() && (getUserData().role == 'admin' || permission in getUserData().permissions);
+    }
+
+    function isAdmin() {
+      return hasRole('admin') || hasRole('ministry_admin');
+    }
+
+    function isMinistryAdmin() {
+      return hasRole('ministry_admin');
+    }
+
+    function isFacilityAdmin() {
+      return hasRole('facility_admin');
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User profiles
+    match /users/{uid} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (request.auth.uid == uid || hasRole('admin'));
+      allow update: if isAuthenticated() && (request.auth.uid == uid || hasRole('admin') || hasRole('facility_admin'));
+      allow delete: if hasRole('admin');
+    }
+
+    // Sessions (Zero Trust)
+    match /sessions/{sessionId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false; // Backend only via Admin SDK
+    }
+
+    // National Identity Registry (Citizens)
+    match /citizens/{citizenId} {
+      allow read: if isAuthenticated() && (
+        isMinistryAdmin() || 
+        hasRole('doctor') || 
+        hasRole('lab_technician') ||
+        (hasRole('patient') && (request.auth.uid == citizenId || getUserData().yhid == resource.data.healthId))
+      );
+      allow write: if hasRole('admin') || hasRole('facility_admin');
+    }
+
+    // Unified Health Records
+    match /health_records/{recordId} {
+      allow read: if isAuthenticated() && (
+        isMinistryAdmin() || 
+        hasRole('doctor') || 
+        (hasRole('patient') && getUserData().yhid == resource.data.patientId)
+      );
+      allow write: if hasRole('doctor') || hasRole('admin');
+    }
+
+    // Audit Logs
+    match /logs/{logId} {
+      allow read: if isMinistryAdmin() || hasRole('admin');
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    // Healthcare Facilities
+    match /facilities/{facilityId} {
+      allow read: if isAuthenticated();
+      allow write: if hasRole('admin') || hasRole('ministry_admin');
+    }
+
+    // Prescriptions Collection
+    match /prescriptions/{prescriptionId} {
+      allow read: if isAuthenticated() && (
+        isMinistryAdmin() || 
+        hasRole('doctor') || 
+        hasRole('pharmacist') || 
+        (hasRole('patient') && getUserData().yhid == resource.data.patientId)
+      );
+      allow create: if hasRole('doctor') || hasRole('admin');
+      allow update: if hasRole('pharmacist') || hasRole('doctor') || hasRole('admin');
+    }
+
+    // Epidemiology
+    match /epidemiology/{reportId} {
+      allow read: if isAuthenticated();
+      allow write: if isMinistryAdmin() || hasRole('admin');
+    }
+
+    // Medical Visits
+    match /visits/{visitId} {
+      allow read: if isAuthenticated();
+      allow write: if hasRole('doctor') || isAdmin();
+    }
+
+    // Prescriptions Collection
+    match /prescriptions/{prescriptionId} {
+      allow read: if isAuthenticated();
+      allow write: if hasRole('doctor') || hasRole('pharmacist') || isAdmin();
+    }
+
+    // Activities Collection
+    match /activities/{activityId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    // Notifications Collection
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Network Node Status
+    match /regional_nodes/{nodeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}
